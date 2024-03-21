@@ -32,7 +32,7 @@ def main():
 
 
     config = {
-            'use_cuda': True,
+            'use_cuda': False,
             'batchsize': 64,
             'max_len': 170,
             'early_stop': 3,
@@ -53,9 +53,11 @@ def main():
             'seed': 2021,
             'save_param_dir': './param_model'
             }
+    
+    device = torch.device('cuda' if config['use_cuda'] else 'cpu')
     model = MultiDomainFENDModel(768,[384],'./pretrained_model/chinese_roberta_wwm_base_ext_pytorch',0.2,'bert')
     model.load_state_dict(torch.load('/home/develop/workspace/MDFEND-Weibo21/param_model/mdfend/parameter_mdfend.pkl'))
-    model.cuda()
+    model.to(device)
 
 
     text = input("请输入文本：")
@@ -69,17 +71,16 @@ def main():
 
 
     data = {
-        'content': content_token_ids.cuda() ,
-        'content_masks': content_masks.cuda(),
-        'label': label.cuda(),
-        'category': category.cuda()
+        'content': content_token_ids.to(device) ,
+        'content_masks': content_masks.to(device),
+        'label': label.to(device),
+        'category': category.to(device),
+        'use_cuda': config['use_cuda']
         }
 
     res = model(**data)
 
     print(f"模型预测该文本为谣言的概率为: {res[1].detach().cpu().numpy()}")
-
-
 
 
 

@@ -41,13 +41,16 @@ class MultiDomainFENDModel(torch.nn.Module):
         inputs = kwargs['content']
         masks = kwargs['content_masks']
         category = kwargs['category']
+        use_cuda = kwargs['use_cuda']
+            
+        device = torch.device('cuda' if use_cuda else 'cpu')
         if self.emb_type == "bert":
             init_feature = self.bert(inputs, attention_mask = masks)[0]
         elif self.emb_type == 'w2v':
             init_feature = inputs
         
         feature, _ = self.attention(init_feature, masks)
-        idxs = torch.tensor([index for index in category]).view(-1, 1).cuda()
+        idxs = torch.tensor([index for index in category]).view(-1, 1).to(device)
         domain_embedding = self.domain_embedder(idxs).squeeze(1)
 
         gate_input_feature = feature
