@@ -1,0 +1,19 @@
+{
+    "@@locale": "en",
+    "language": "English",
+    "@language": {
+        "description": "the language used in the app"
+    },
+    "languageSetting": "language setting",
+    "@languageSetting": {
+        "description": "language setting"
+    },
+    "theme": "theme",
+    "@theme":{
+        "description": "the theme of the app"
+    },
+    "title": "PerfectCV",
+    "@title":{
+        "description": "the title of the app"
+    }
+}
