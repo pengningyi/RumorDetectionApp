@@ -187,3 +187,25 @@ class APIClient(object):
                            base_app=0, 
                 )
         return result
+    
+    def public_timeline(self):
+        '''
+        get new public weibo,the parameters followed can be used in _http_get in this method
+        access_token : (string) the token you got after OAuth
+        count : (int) the record items in one single page,default 50 items
+        page : (int) the page number,default one page
+        base_app : (int) whether get data in current app or not,0 is not(all data),1 is yes(current app),default 0
+        '''
+        result = _http_get('%s'% (self.api_url)  + 'statuses/home_timeline.json', 
+                           access_token=self.access_token, 
+                           count=20, 
+                           page=1, 
+                           base_app=0, 
+                )
+        return result
+
+    def get_uid(self):
+        result = _http_get('%s'% (self.api_url)  + 'account/get_uid.json', 
+                    access_token=self.access_token, 
+        )
+        return result
