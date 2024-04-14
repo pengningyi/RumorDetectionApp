@@ -15,7 +15,7 @@ warnings.filterwarnings("ignore")
 
 
 
-def main():
+def get_text_index(text):
 
 
     category_dict = {
@@ -60,8 +60,6 @@ def main():
     model.to(device)
 
 
-    text = input("请输入文本：")
-
     df = pd.DataFrame([{"content":"haha",'label':0,'category':"科技"},{"content":text,'label':1,'category':"科技"}])
 
     content = df['content'].to_numpy()
@@ -80,10 +78,5 @@ def main():
 
     res = model(**data)
 
-    print(f"模型预测该文本为谣言的概率为: {res[1].detach().cpu().numpy()}")
-
-
-
-
-if __name__ =="__main__":
-    main()
+    #print(f"模型预测该文本为谣言的概率为: {res[1].detach().cpu().numpy()}")
+    return res[1].detach().cpu().numpy()
