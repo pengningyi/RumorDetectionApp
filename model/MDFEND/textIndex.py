@@ -79,4 +79,9 @@ def get_text_index(text):
     res = model(**data)
 
     #print(f"模型预测该文本为谣言的概率为: {res[1].detach().cpu().numpy()}")
-    return res[1].detach().cpu().numpy()
+    return float(res[1].detach().cpu().numpy())
+
+if __name__ == '__main__':
+    text = input("请输入:")
+    print(get_text_index(text))
+    

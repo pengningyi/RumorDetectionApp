@@ -1,15 +1,116 @@
+import sys
+import os
+sys.path.append('/home/develop/workspace/RumorDetectionApp/model/MDFEND')
+
+
+
+import numpy as np
+import pandas as pd
+import torch
+from torch.utils.data import TensorDataset, DataLoader
+from models.mdfend import MultiDomainFENDModel
+from utils.dataloader import word2input
+
+import utils ##The local utils
+import sys
+import argparse
+
+import warnings
+warnings.filterwarnings("ignore")
+
+
+
+###TODO need to modify here to only load the model once
+def get_text_index(text):
+
+
+    category_dict = {
+        "科技": 0,  
+        "军事": 1,  
+        "教育考试": 2,  
+        "灾难事故": 3,  
+        "政治": 4,  
+        "医药健康": 5,  
+        "财经商业": 6,  
+        "文体娱乐": 7,  
+        "社会生活": 8
+    }
+
+
+    config = {
+            'use_cuda': False,
+            'batchsize': 64,
+            'max_len': 170,
+            'early_stop': 3,
+            'num_workers': 4,
+            'vocab_file': './pretrained_model/chinese_roberta_wwm_base_ext_pytorch/vocab.txt',
+            'emb_type': 'bert',
+            'bert': './pretrained_model/chinese_roberta_wwm_base_ext_pytorch',
+            'root_path': './data/weibo21/',
+            'weight_decay': 5e-5,
+            'model':
+                {
+                'mlp': {'dims': [384], 'dropout': 0.2}
+                },
+            'emb_dim':768,
+            'lr': 0.0005,
+            'epoch': 50,
+            'model_name': 'mdfend',
+            'seed': 2021,
+            'save_param_dir': './param_model'
+            }
+    
+    device = torch.device('cuda' if config['use_cuda'] else 'cpu')
+    model = MultiDomainFENDModel(768,[384],'./pretrained_model/chinese_roberta_wwm_base_ext_pytorch',0.2,'bert')
+    model.load_state_dict(torch.load('./param_model/mdfend/parameter_mdfend.pkl'))
+    model.to(device)
+
+
+    df = pd.DataFrame([{"content":"haha",'label':0,'category':"科技"},{"content":text,'label':1,'category':"科技"}])
+
+    content = df['content'].to_numpy()
+    label = torch.tensor(df['label'].astype(int).to_numpy())
+    category = torch.tensor(df['category'].apply(lambda c: category_dict[c]).to_numpy())
+    content_token_ids, content_masks = word2input(content, config['vocab_file'], config['max_len'])
+
+
+    data = {
+        'content': content_token_ids.to(device) ,
+        'content_masks': content_masks.to(device),
+        'label': label.to(device),
+        'category': category.to(device),
+        'use_cuda': config['use_cuda']
+        }
+
+    res = model(**data)
+
+    #print(f"模型预测该文本为谣言的概率为: {res[1].detach().cpu().numpy()}")
+    return float(res[1].detach().cpu().numpy())
+
+
+
+
+
+
+
+
 
 def model_LLM_test(text):
     #TODO add the model here
     #psudo function which returns the predicted rumor prob for the texts
     return 0.5
+
+def model_LLM(text):
+    return get_text_index(text)
+
 def get_initial_val(uid,num):
     score = 0
     ##Average the LLM score from num of texts
     p = client.people(uid)
     cnt = 0
     for status in p.statuses.page(1):
-        score += model_LLM_test(status.text)
+        score += model_LLM(status.text)
+
         cnt+=1
     if cnt ==0:
         return 0.5
@@ -138,10 +239,22 @@ def deepSearchList(list, uid, floor, num):
 
 
 def get_user_index(uid):
+
+    tmp = os.getcwd()
+    print(tmp)
+
+    os.chdir('/home/develop/workspace/RumorDetectionApp/model/MDFEND')
+
+    print(os.getcwd())
+
+
+
+
+
     data = dict()
-    data = deepSearchList(data, uid, 3, 3)
-    with open(f'./{uid}.json', 'w', encoding='utf-8') as f:
-        f.write(json.dumps(data, ensure_ascii=False))
+    data = deepSearchList(data, uid, 2, 2)
+    #with open(f'./{uid}.json', 'w', encoding='utf-8') as f:
+        #f.write(json.dumps(data, ensure_ascii=False))
     G = nx.DiGraph()
     node_size_list = dict()
     node_color_list = dict()
@@ -152,8 +265,9 @@ def get_user_index(uid):
         node_size_list[data[person]['userInfo']['name']] = 0
         node_color_list[data[person]['userInfo']['name']] = 'lightblue' if data[person]['userInfo']['gender'] == '男' else 'pink'
         
- 
-        initial_vals[data[person]['userInfo']['name']] = get_initial_val(data[person]['userInfo']['id'],2)
+        score_test = get_initial_val(data[person]['userInfo']['id'],2)
+        print(score_test)
+        initial_vals[data[person]['userInfo']['name']] = score_test
 
     for person in data:
         if 'interestList' in data[person].keys():
@@ -174,6 +288,10 @@ def get_user_index(uid):
     pagerank_vector = np.array([pagerank[node] for node in G.nodes()])
     initial_vals_vector = np.array([initial_vals[node] for node in G.nodes()])
     user_rumor_index = np.dot(pagerank_vector,initial_vals_vector)-pagerank_vector[0]*initial_vals_vector[0]
+
+
+
+    os.chdir(tmp)
     return user_rumor_index
 
 if __name__ == '__main__':
